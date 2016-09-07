@@ -264,20 +264,22 @@ def Aggregate(teamcompactresults1,
     return agg_results
 
 
-def GetTrainAndTest():
+def GetTrainAndTestAndSubmission():
     tourneyresults = pd.read_csv('files/TourneyCompactResults.csv')
     tourneyseeds = pd.read_csv('files/TourneySeeds.csv')
     regularseasoncompactresults = \
         pd.read_csv('files/RegularSeasonCompactResults.csv')
     sample = pd.read_csv('files/SampleSubmission.csv')
     results = pd.DataFrame()
+    #tourneyresults = tourneyresults_plain[tourneyresults_plain.Season != 2015]
+    #tourneyresults_test = tourneyresults_plain[tourneyresults_plain.Season =]
     results['year'] = tourneyresults.Season
     # pierwsza druzyna na mniejszy indeks niz druga
     results['team1'] = np.minimum(tourneyresults.Wteam, tourneyresults.Lteam)
     results['team2'] = np.maximum(tourneyresults.Wteam, tourneyresults.Lteam)
      # wynik jako wynik dla pierwszej druzyny
     results['result'] = (tourneyresults.Wteam <
-                         tourneyresults.Lteam).astype(int)
+                         tourneyresults.Lteam).astype(int)   
     merged_results = pd.merge(left=results,
                               right=tourneyseeds,
                               left_on=['year', 'team1'],
@@ -339,12 +341,28 @@ def GetTrainAndTest():
                               right=lossesteam2,
                               left_on=['year', 'team2'],
                               right_on=['year', 'team2'])
+    
+    test_merged_results = merged_results[merged_results.year == 2015]
+    merged_results = merged_results[merged_results.year != 2015]
+    #regularseasoncompactresults_train = regularseasoncompactresults[regularseasoncompactresults.Season != 2016]
+    #regularseasoncompactresults_test = regularseasoncompactresults[regularseasoncompactresults.Season == 2016]
+
     teamcompactresults1 = merged_results[['year', 'team1']].copy()
     teamcompactresults2 = merged_results[['year', 'team2']].copy()
+
     train = Aggregate(teamcompactresults1,
                       teamcompactresults2,
                       merged_results,
                       regularseasoncompactresults)
+
+    teamcompactresults1 = test_merged_results[['year', 'team1']].copy()
+    teamcompactresults2 = test_merged_results[['year', 'team2']].copy()
+
+    test = Aggregate(teamcompactresults1,
+                      teamcompactresults2,
+                      test_merged_results,
+                      regularseasoncompactresults)
+
 
     sample['year'] = sample.Id.apply(lambda x: str(x)[:4]).astype(int)
     sample['team1'] = sample.Id.apply(lambda x: str(x)[5:9]).astype(int)
@@ -392,9 +410,9 @@ def GetTrainAndTest():
     teamcompactresults1 = merged_results[['year', 'team1']].copy()
     teamcompactresults2 = merged_results[['year', 'team2']].copy()
     
-    test = Aggregate(teamcompactresults1,
+    submission = Aggregate(teamcompactresults1,
                      teamcompactresults2,
                      merged_results,
                      regularseasoncompactresults)
 
-    return train, test
+    return train, test, submission
